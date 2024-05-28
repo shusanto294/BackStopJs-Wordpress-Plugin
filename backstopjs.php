@@ -251,3 +251,78 @@ function run_backstop_approve() {
     // Return the output
     return new WP_REST_Response(['output' => $output], 200);
 }
+
+
+//Generate the json file on plugin activate
+
+function generate_backstop_json() {
+    $pages = get_pages();
+    $scenarios = [];
+
+    foreach ($pages as $page) {
+        $scenarios[] = [
+            "label" => $page->post_title,
+            "cookiePath" => "backstop_data/engine_scripts/cookies.json",
+            "url" => get_permalink($page->ID),
+            "referenceUrl" => "",
+            "readyEvent" => "",
+            "readySelector" => "",
+            "delay" => 0,
+            "hideSelectors" => [],
+            "removeSelectors" => [],
+            "hoverSelector" => "",
+            "clickSelector" => "",
+            "postInteractionWait" => 0,
+            "selectors" => [],
+            "selectorExpansion" => true,
+            "expect" => 0,
+            "misMatchThreshold" => 0.1,
+            "requireSameDimensions" => true
+        ];
+    }
+
+    $backstop_config = [
+        "id" => "backstop_default",
+        "viewports" => [
+            [
+                "label" => "phone",
+                "width" => 320,
+                "height" => 480
+            ],
+            [
+                "label" => "tablet",
+                "width" => 1024,
+                "height" => 768
+            ],
+            [
+                "label" => "desktop",
+                "width" => 1500,
+                "height" => 768
+            ]
+        ],
+        "onBeforeScript" => "puppet/onBefore.js",
+        "onReadyScript" => "puppet/onReady.js",
+        "scenarios" => $scenarios,
+        "paths" => [
+            "bitmaps_reference" => "backstop_data/bitmaps_reference",
+            "bitmaps_test" => "backstop_data/bitmaps_test",
+            "engine_scripts" => "backstop_data/engine_scripts",
+            "html_report" => "backstop_data/html_report",
+            "ci_report" => "backstop_data/ci_report"
+        ],
+        "report" => ["browser"],
+        "engine" => "puppeteer",
+        "engineOptions" => [
+            "args" => ["--no-sandbox"]
+        ],
+        "asyncCaptureLimit" => 5,
+        "asyncCompareLimit" => 50,
+        "debug" => false,
+        "debugWindow" => false
+    ];
+
+    $json_data = json_encode($backstop_config, JSON_PRETTY_PRINT);
+    file_put_contents(plugin_dir_path(__FILE__) . 'backstop.json', $json_data);
+}
+
+register_activation_hook(__FILE__, 'generate_backstop_json');
